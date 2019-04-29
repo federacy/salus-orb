@@ -1,0 +1,92 @@
+# Use the latest 2.1 version of CircleCI pipeline processing engine, see https://circleci.com/docs/2.0/configuration-reference/
+version: 2.1
+description: "Salus"
+
+executors:
+  salus:
+    docker:
+      - image: coinbase/salus:2.4.1
+jobs:
+  scan:
+    executor: salus
+    working_directory: /home
+    parameters:
+      active_scanners:
+        description: Scanners to run
+        type: string
+        default: "all"
+      enforced_scanners:
+        description: lists all scanners that should cause Salus to exit with a non-zero status if they find a security vulnerability.
+        type: string
+        default: "all"
+      report_uri:
+        description: Defines where to send Salus reports
+        type: string
+        default: "file://test/salus-report.json"
+      report_format:
+        description: Defines the format of the report (json, yaml, txt)
+        type: string
+        default: "json"
+      report_verbosity:
+        description: Defines whether the report should be verbose
+        type: boolean
+        default: true
+    steps:
+      - checkout:
+          path: ./repo
+      - run:
+          name: Create configuration
+          command: |
+            echo " 
+              config_version: 1
+
+              active_scanners: << parameters.active_scanners >>
+
+              enforced_scanners: << parameters.enforced_scanners >>
+
+              reports:
+                - uri: << parameters.report_uri >> 
+                  format: << parameters.report_format >>
+                  verbose: << parameters.report_verbosity >>" | tee ./repo/salus-configuration.yaml 
+
+      - run: 
+          name: Run scan
+          command: |
+            SALUS_CONFIGURATION="file://salus-configuration.yaml" /usr/local/bundle/bin/bundle exec ./bin/salus scan
+      - store_artifacts:
+          path: ./repo/test/salus-report.json
+
+examples:
+  blocking_scan:
+    description: A Salus scan that blocks on any potential vulnerabilities
+    usage:
+      version: 2.1
+      orbs:
+        salus: federacy/salus@dev:0.0.1
+      workflows:
+        salus_scan:
+          jobs: 
+            - salus/scan
+  non_blocking_scan:
+    description: A Salus scan that does not block on potential vulnerabilities
+    usage:
+      version: 2.1
+      orbs:
+        salus: federacy/salus@dev:0.0.1
+      workflows:
+        salus_scan:
+          jobs: 
+            - salus/scan:
+                enforced_scanners: "none"
+  specify_scanners:
+    description: A Salus scan using specific scanners
+    usage:
+      version: 2.1
+      orbs:
+        salus: federacy/salus@dev:0.0.1
+      workflows:
+        salus_scan:
+          jobs: 
+            - salus/scan:
+                active_scanners: "\n    - Brakeman"
+
