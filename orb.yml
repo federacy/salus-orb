@@ -8,9 +8,13 @@ executors:
       - image: coinbase/salus:2.4.1
 jobs:
   scan:
-    executor: salus
+    executor: << parameters.salus_container >>
     working_directory: /home
     parameters:
+      salus_container:
+        description: Executor for Salus
+        type: executor
+        default: salus
       active_scanners:
         description: Scanners to run
         type: string
@@ -89,4 +93,3 @@ examples:
           jobs: 
             - salus/scan:
                 active_scanners: "\n    - Brakeman"
-
