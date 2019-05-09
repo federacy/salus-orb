@@ -12,7 +12,7 @@ A CircleCI Orb for Salus
 | report_uri | Where to send Salus reports | file://../salus-report.json | Any URI |
 | report_format | What format to use for report | json | json, yaml, txt |
 | report_verbosity | Whether to enable a verbose report | true | true, false |
-| configuration_file | Location of config file in repo | "" | Any filename |
+| configuration_file | Location of config file in repo (overrides all other parameters except salus_executor) | "" | Any filename |
 
 Note: active_scanners and enforced_scanners must be yaml formatted for Salus configuration file.
 
