@@ -5,7 +5,7 @@ description: "Salus"
 executors:
   salus:
     docker:
-      - image: coinbase/salus:latest
+      - image: coinbase/salus:2.4.2
 jobs:
   scan:
     executor: << parameters.salus_executor >>
@@ -56,14 +56,13 @@ jobs:
                   format: << parameters.report_format >>
                   verbose: << parameters.report_verbosity >>" | tee salus-configuration.yaml 
           working_directory: /home
-
       - run: 
           name: Run scan
           command: |
             configuration_file="<<parameters.configuration_file>>"
-            if [[ -n "repo/${configuration_file}" ]]; then
+            if [[ -n "${configuration_file}" ]]; then
               if [[ ! -f "repo/${configuration_file}" ]]; then
-                echo "$repo/{configuration_file} does not exist, aborting."
+                echo "repo/${configuration_file} does not exist, aborting."
                 exit 1
               else
                 bundle exec /home/bin/salus scan --repo_path $CIRCLE_WORKING_DIRECTORY --config "file://${configuration_file}"
@@ -126,4 +125,3 @@ examples:
             - salus/scan:
                 salus_executor:
                   name: salus_latest
-
