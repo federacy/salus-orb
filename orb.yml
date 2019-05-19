@@ -5,11 +5,11 @@ description: "Salus"
 executors:
   salus:
     docker:
-      - image: coinbase/salus:2.4.1
+      - image: coinbase/salus:2.4.2
 jobs:
   scan:
     executor: << parameters.salus_executor >>
-    working_directory: /home
+    working_directory: /home/repo
     parameters:
       salus_executor:
         description: Executor for Salus
@@ -26,7 +26,7 @@ jobs:
       report_uri:
         description: Defines where to send Salus reports
         type: string
-        default: "file://test/salus-report.json"
+        default: "file://../salus-report.json"
       report_format:
         description: Defines the format of the report (json, yaml, txt)
         type: string
@@ -35,9 +35,12 @@ jobs:
         description: Defines whether the report should be verbose
         type: boolean
         default: true
+      configuration_file:
+        description: Location of the Salus configuration file
+        type: string
+        default: ""
     steps:
-      - checkout:
-          path: ./repo
+      - checkout
       - run:
           name: Create configuration
           command: |
@@ -51,14 +54,27 @@ jobs:
               reports:
                 - uri: << parameters.report_uri >> 
                   format: << parameters.report_format >>
-                  verbose: << parameters.report_verbosity >>" | tee ./repo/salus-configuration.yaml 
-
+                  verbose: << parameters.report_verbosity >>" | tee salus-configuration.yaml 
+          working_directory: /home
       - run: 
           name: Run scan
           command: |
-            SALUS_CONFIGURATION="file://salus-configuration.yaml" /usr/local/bundle/bin/bundle exec ./bin/salus scan
+            configuration_file="<<parameters.configuration_file>>"
+            if [[ -n "${configuration_file}" ]]; then
+              if [[ ! -f "repo/${configuration_file}" ]]; then
+                echo "repo/${configuration_file} does not exist, aborting."
+                exit 1
+              else
+                bundle exec /home/bin/salus scan --repo_path $CIRCLE_WORKING_DIRECTORY --config "file://${configuration_file}"
+              fi
+            else
+              bundle exec /home/bin/salus scan --repo_path $CIRCLE_WORKING_DIRECTORY --config "file://../salus-configuration.yaml"
+            fi
+          environment:
+            BUNDLE_GEMFILE: /home/Gemfile
+          working_directory: /home
       - store_artifacts:
-          path: ./repo/test/salus-report.json
+          path: /home/salus-report.json
 
 examples:
   blocking_scan:
